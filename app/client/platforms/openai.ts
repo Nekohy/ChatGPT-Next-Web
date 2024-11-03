@@ -194,7 +194,7 @@ export class ChatGPTApi implements LLMApi {
     let requestPayload: RequestPayload | DalleRequestPayload;
 
     const isDalle3 = _isDalle3(options.config.model);
-    const isO1 = false;
+    const isO1 = options.config.model.startsWith("o1");
     if (isDalle3) {
       const prompt = getMessageTextContent(
         options.messages.slice(-1)?.pop() as any,
@@ -223,7 +223,7 @@ export class ChatGPTApi implements LLMApi {
       // O1 not support image, tools (plugin in ChatGPTNextWeb) and system, stream, logprobs, temperature, top_p, n, presence_penalty, frequency_penalty yet.
       requestPayload = {
         messages,
-        stream: !isO1 ? options.config.stream : false,
+        stream: options.config.stream,
         model: modelConfig.model,
         temperature: !isO1 ? modelConfig.temperature : 1,
         presence_penalty: !isO1 ? modelConfig.presence_penalty : 0,
@@ -241,7 +241,7 @@ export class ChatGPTApi implements LLMApi {
 
     console.log("[Request] openai payload: ", requestPayload);
 
-    const shouldStream = !isDalle3 && !!options.config.stream && !isO1;
+    const shouldStream = !isDalle3 && !!options.config.stream;
     const controller = new AbortController();
     options.onController?.(controller);
 
@@ -353,7 +353,7 @@ export class ChatGPTApi implements LLMApi {
         // make a fetch request
         const requestTimeoutId = setTimeout(
           () => controller.abort(),
-          isDalle3 || isO1 ? REQUEST_TIMEOUT_MS * 4 : REQUEST_TIMEOUT_MS, // dalle3 using b64_json is slow.
+          isDalle3 ? REQUEST_TIMEOUT_MS * 4 : REQUEST_TIMEOUT_MS, // dalle3 using b64_json is slow.
         );
 
         const res = await fetch(chatPath, chatPayload);
